@@ -10,10 +10,10 @@ repositories:
 | [`SECURITY.md`](SECURITY.md) | Org-default vulnerability-disclosure policy |
 | [`renovate-config.json`](renovate-config.json) | Shared Renovate preset (fork paths + submodules disabled) |
 
-The scanners mirror `turf-mcp-server`'s `make scan` (govulncheck, osv-scanner,
+The scanners mirror the Turf server's `make scan` (govulncheck, osv-scanner,
 gosec via golangci-lint, trivy fs). Tool versions are pinned in
 [`actions/scan/action.yml`](actions/scan/action.yml) — keep them in lockstep with
-that repo's `Makefile`.
+the server's `Makefile`.
 
 ## Consume the scan (thin caller)
 
@@ -75,5 +75,5 @@ the fork-rebase flow (`docs/development/fork-maintenance.md`).
 
 - This repo is **public** so its reusable workflow/action and community-health
   defaults are visible to the public forks. The `SECURITY.md` default here
-  applies to public repos; the private `turf-mcp-server` carries its own.
+  applies to public repos; the private server repo carries its own.
 - Pin consumers to `@main` for now; move to a tag/SHA once the surface settles.

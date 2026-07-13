@@ -1,6 +1,6 @@
 # Composite scan action — the reusable unit of turfbuild's CVE/SAST scanning.
 #
-# It runs the SAME pinned scanners as turf-mcp-server's `make scan` (govulncheck,
+# It runs the SAME pinned scanners as the Turf server's `make scan` (govulncheck,
 # osv-scanner, gosec via golangci-lint, trivy fs) and writes one SARIF file per
 # tool into `sarif-dir`. It is deliberately Makefile-INDEPENDENT so the public
 # forks — which carry upstream Makefiles with no turf security targets — can add
@@ -11,9 +11,9 @@
 # otherwise a sensible default bundled beside this action. That lets the
 # reference repo keep its tuned configs while a bare fork still scans cleanly.
 #
-# Tool version pins default to turf-mcp-server's Makefile; keep them in lockstep.
+# Tool version pins default to the Turf server's Makefile; keep them in lockstep.
 name: "turf security scan"
-description: "Pinned CVE + SAST scanners (govulncheck, osv-scanner, gosec, trivy fs) emitting per-tool SARIF. Mirrors turf-mcp-server's `make scan`."
+description: "Pinned CVE + SAST scanners (govulncheck, osv-scanner, gosec, trivy fs) emitting per-tool SARIF. Mirrors the Turf server's `make scan`."
 
 inputs:
   language:

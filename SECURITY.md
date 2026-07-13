@@ -3,7 +3,7 @@
 This is the org-wide security policy for all [`turfbuild`](https://github.com/turfbuild)
 repositories. Turf executes real infrastructure changes and handles cloud
 provider credentials, so we treat vulnerability reports seriously. A repository
-may override this file with its own `SECURITY.md` (e.g. `turf-mcp-server`).
+may override this file with its own `SECURITY.md`.
 
 ## Reporting a vulnerability
 
@@ -46,7 +46,7 @@ finding is carried in the consumer's OpenVEX disposition as `affected` /
 
 ## Disposition & transparency (closed-source binary)
 
-The `turf-mcp-server` binary is proprietary and obfuscated, but its supply-chain
+The Turf server binary is proprietary and obfuscated, but its supply-chain
 posture is public and verifiable. Every release on
 [`turfbuild/turf`](https://github.com/turfbuild/turf/releases) ships, alongside
 `checksums.txt`, an SBOM (SPDX + CycloneDX, generated from the module graph), an
