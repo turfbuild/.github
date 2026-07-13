@@ -37,6 +37,7 @@
     "description": "Fork submodules are fork-flow-managed, not Renovate-bumped.",
     "enabled": false
   },
+  "cloneSubmodules": true,
   "vulnerabilityAlerts": {
     "labels": ["security"],
     "automerge": false
