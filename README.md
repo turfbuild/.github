@@ -50,7 +50,7 @@ if present, otherwise a bundled default.
 To add scanning to an existing job instead of a whole workflow:
 
 ```yaml
-- uses: actions/checkout@v5
+- uses: actions/checkout@v7
   with: { fetch-depth: 0 }
 - uses: turfbuild/.github/actions/scan@main
   with:
