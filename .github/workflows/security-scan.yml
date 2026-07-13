@@ -1,0 +1,98 @@
+# Reusable security-scan workflow for turfbuild repos.
+#
+# A repo consumes it with a thin caller (.github/workflows/security.yml):
+#
+#   jobs:
+#     security:
+#       uses: turfbuild/.github/.github/workflows/security-scan.yml@main
+#       with:
+#         has-submodules: true   # server + CLI carry fork submodules
+#         is-public: false       # private repo → SARIF as artifact, not code-scanning
+#       permissions:
+#         contents: read
+#         security-events: write
+#
+# It runs the pinned scanners (via actions/scan) and publishes SARIF to the
+# GitHub code-scanning tab on public repos (free GHAS) or as a workflow artifact
+# on private repos (until GHAS is enabled). SAST is diff-gated on PRs.
+name: Security scan (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: "go | generic"
+        type: string
+        default: go
+      has-submodules:
+        description: "Materialize git submodules before scanning."
+        type: boolean
+        default: false
+      is-public:
+        description: "Public repo → upload SARIF to the code-scanning tab; private → workflow artifact."
+        type: boolean
+        default: false
+      severity:
+        description: "trivy severity gate."
+        type: string
+        default: HIGH,CRITICAL
+      sast:
+        description: "gosec mode: diff | full | off."
+        type: string
+        default: diff
+      trivy:
+        description: "Run the trivy filesystem scan."
+        type: boolean
+        default: true
+      osv-gate:
+        description: "Fail on any un-suppressed osv-scanner finding."
+        type: boolean
+        default: true
+      runs-on:
+        type: string
+        default: ubuntu-latest
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: scan
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+      security-events: write # SARIF upload to code-scanning (public repos)
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # fork replaces must resolve or Go scanning under-reports; full history
+          # is needed for the gosec diff gate (--new-from-merge-base).
+          submodules: ${{ inputs.has-submodules && 'recursive' || false }}
+          fetch-depth: 0
+
+      - name: scan
+        uses: turfbuild/.github/actions/scan@main
+        with:
+          language: ${{ inputs.language }}
+          has-submodules: ${{ inputs.has-submodules }}
+          severity: ${{ inputs.severity }}
+          sast: ${{ inputs.sast }}
+          # base-ref is set only on PRs; empty elsewhere → gosec runs report-only.
+          base-ref: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          trivy: ${{ inputs.trivy }}
+          osv-gate: ${{ inputs.osv-gate }}
+          sarif-dir: dist/security
+
+      - name: upload SARIF to code-scanning (public repos)
+        if: always() && inputs.is-public
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: dist/security
+
+      - name: upload SARIF artifact (private repos)
+        if: always() && !inputs.is-public
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-sarif
+          path: dist/security
+          if-no-files-found: ignore

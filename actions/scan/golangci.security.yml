@@ -1,0 +1,33 @@
+# Default gosec SAST config bundled with the turfbuild scan action (schema v2).
+#
+# Used only when a consuming repo does NOT ship its own .golangci.security.yml.
+# It enables ONLY gosec (not the style/correctness linters) so it never collides
+# with a repo's regular `.golangci.yml` lint job. A repo with a pre-existing
+# gosec backlog should rely on the diff gate (--new-from-merge-base) so only
+# newly-introduced findings block a PR; the full run is report-only.
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - gosec
+  exclusions:
+    rules:
+      # Test code: G101 fires on fixtures containing the word "password";
+      # G204 fires because tests routinely spawn subprocesses / `go build`;
+      # G301/G302/G306 file & dir perms in throwaway t.TempDir() trees are moot.
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G101|G204|G301|G302|G306"
+      # Build/scan/release tooling under scripts/ reads paths from argv by
+      # design (G304 file inclusion, G703 path traversal) — that is the job.
+      - path: scripts/
+        linters:
+          - gosec
+        text: "G304|G703"
+      # G304 "file inclusion via variable" is inherent to infra tooling that
+      # operates on caller-named config/state files. Reviewed.
+      - linters:
+          - gosec
+        text: "G304"

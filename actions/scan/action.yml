@@ -1,0 +1,145 @@
+# Composite scan action — the reusable unit of turfbuild's CVE/SAST scanning.
+#
+# It runs the SAME pinned scanners as turf-mcp-server's `make scan` (govulncheck,
+# osv-scanner, gosec via golangci-lint, trivy fs) and writes one SARIF file per
+# tool into `sarif-dir`. It is deliberately Makefile-INDEPENDENT so the public
+# forks — which carry upstream Makefiles with no turf security targets — can add
+# scanning by dropping in this one step, no Makefile changes.
+#
+# Config discovery: each scanner uses the consuming repo's config file if present
+# (.security/osv-scanner.toml, .security/trivy.yaml, .golangci.security.yml),
+# otherwise a sensible default bundled beside this action. That lets the
+# reference repo keep its tuned configs while a bare fork still scans cleanly.
+#
+# Tool version pins default to turf-mcp-server's Makefile; keep them in lockstep.
+name: "turf security scan"
+description: "Pinned CVE + SAST scanners (govulncheck, osv-scanner, gosec, trivy fs) emitting per-tool SARIF. Mirrors turf-mcp-server's `make scan`."
+
+inputs:
+  language:
+    description: "Primary language. 'go' runs the Go scanners (govulncheck, gosec) + osv + trivy; 'generic' runs only osv + trivy."
+    default: "go"
+  has-submodules:
+    description: "Materialize git submodules before scanning ('true'/'false'). Fork `replace` targets must resolve or Go scanning silently under-reports."
+    default: "false"
+  severity:
+    description: "Severity gate for trivy (comma list). Findings at/above fail the job."
+    default: "HIGH,CRITICAL"
+  sast:
+    description: "gosec mode: 'diff' (gate only on new findings vs base-ref), 'full' (report, non-gating), or 'off'."
+    default: "diff"
+  base-ref:
+    description: "Base ref for diff-gated SAST, e.g. origin/main. Empty on non-PR events → gosec runs report-only."
+    default: ""
+  trivy:
+    description: "Run the trivy filesystem scan ('true'/'false')."
+    default: "true"
+  osv-gate:
+    description: "Fail the job on any osv-scanner finding not suppressed by .security/osv-scanner.toml ('true'/'false')."
+    default: "true"
+  sarif-dir:
+    description: "Directory for per-tool SARIF output."
+    default: "dist/security"
+  go-version-file:
+    description: "go.mod path for setup-go (language=go)."
+    default: "go.mod"
+  govulncheck-version:
+    default: "v1.1.4"
+  osvscanner-version:
+    default: "v2.2.4"
+  golangci-version:
+    default: "v2.12.2"
+
+runs:
+  using: composite
+  steps:
+    - name: setup-go
+      if: inputs.language == 'go'
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: ${{ inputs.go-version-file }}
+        cache: true
+        cache-dependency-path: go.sum
+
+    - name: materialize submodules
+      if: inputs.has-submodules == 'true'
+      shell: bash
+      run: git submodule update --init --recursive
+
+    - name: prepare
+      shell: bash
+      run: mkdir -p "${{ inputs.sarif-dir }}"
+
+    - name: govulncheck (reachable Go CVEs)
+      if: inputs.language == 'go'
+      shell: bash
+      run: |
+        bin="go run golang.org/x/vuln/cmd/govulncheck@${{ inputs.govulncheck-version }}"
+        echo "==> govulncheck ${{ inputs.govulncheck-version }} (SARIF report)"
+        $bin -format sarif ./... > "${{ inputs.sarif-dir }}/govulncheck.sarif" || true
+        echo "==> govulncheck (gate: reachable vulns)"
+        $bin ./...
+
+    - name: osv-scanner (lockfile CVEs)
+      shell: bash
+      run: |
+        bin="go run github.com/google/osv-scanner/v2/cmd/osv-scanner@${{ inputs.osvscanner-version }}"
+        cfg=""; [ -f .security/osv-scanner.toml ] && cfg="--config=.security/osv-scanner.toml"
+        echo "==> osv-scanner ${{ inputs.osvscanner-version }} (SARIF report) $cfg"
+        $bin scan source $cfg --format sarif --output "${{ inputs.sarif-dir }}/osv-scanner.sarif" . || true
+        if [ "${{ inputs.osv-gate }}" = "true" ]; then
+          echo "==> osv-scanner (gate)"
+          $bin scan source $cfg .
+        else
+          echo "==> osv-scanner gate disabled (osv-gate=false); SARIF report only"
+        fi
+
+    - name: install golangci-lint (gosec)
+      if: inputs.language == 'go' && inputs.sast != 'off'
+      shell: bash
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
+          | sh -s -- -b "$(go env GOPATH)/bin" ${{ inputs.golangci-version }}
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+    - name: gosec (SAST)
+      if: inputs.language == 'go' && inputs.sast != 'off'
+      shell: bash
+      run: |
+        cfg=".golangci.security.yml"
+        [ -f "$cfg" ] || cfg="$GITHUB_ACTION_PATH/golangci.security.yml"
+        echo "==> gosec config: $cfg"
+        golangci-lint run -c "$cfg" --output.sarif.path "${{ inputs.sarif-dir }}/gosec.sarif" || true
+        if [ "${{ inputs.sast }}" = "diff" ] && [ -n "${{ inputs.base-ref }}" ]; then
+          echo "==> gosec (diff gate vs ${{ inputs.base-ref }})"
+          golangci-lint run -c "$cfg" --new-from-merge-base="${{ inputs.base-ref }}"
+        else
+          echo "==> gosec (report only)"
+          golangci-lint run -c "$cfg" || true
+        fi
+
+    - name: install trivy
+      if: inputs.trivy == 'true'
+      shell: bash
+      run: |
+        # Install from aquasec's apt repo — the release-download install.sh is
+        # flaky on GitHub runners (fails right after resolving the version).
+        sudo apt-get update
+        sudo apt-get install -y wget gnupg
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+          | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+          | sudo tee /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install -y trivy
+        trivy --version
+
+    - name: trivy fs
+      if: inputs.trivy == 'true'
+      shell: bash
+      run: |
+        cfg=""; [ -f .security/trivy.yaml ] && cfg="--config .security/trivy.yaml"
+        echo "==> trivy fs (SARIF report) $cfg"
+        trivy fs $cfg --format sarif --output "${{ inputs.sarif-dir }}/trivy-fs.sarif" . || true
+        echo "==> trivy fs (gate: ${{ inputs.severity }})"
+        trivy fs $cfg --exit-code 1 --severity ${{ inputs.severity }} .

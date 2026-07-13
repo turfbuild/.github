@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Shared Renovate policy for turfbuild repos. Consume with \"extends\": [\"github>turfbuild/.github:renovate-config\"]. Fork module paths + fork submodules are managed via the fork-rebase flow (docs/development/fork-maintenance.md), never by Renovate.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "postUpdateOptions": ["gomodTidy"],
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Fork modules move ONLY via the fork-rebase flow (fork-maintenance.md / /dep-upgrade). A Renovate bump would break the local-path replace / submodule pin, so never auto-bump them. Listing a path a repo does not use is a harmless no-op.",
+      "matchPackageNames": [
+        "github.com/opentofu/opentofu",
+        "github.com/opentofu/provider-client",
+        "github.com/hashicorp/terraform-provider-tfcoremock",
+        "github.com/docker/docker-agent",
+        "github.com/docker/cagent"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Group non-major Go dependency bumps into one PR to cut noise; each is gated by the security + CI checks.",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "go dependencies (non-major)"
+    },
+    {
+      "description": "Keep pinned GitHub Actions current but grouped.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    }
+  ],
+  "gitSubmodules": {
+    "description": "Fork submodules are fork-flow-managed, not Renovate-bumped.",
+    "enabled": false
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": false
+  },
+  "osvVulnerabilityAlerts": true
+}
