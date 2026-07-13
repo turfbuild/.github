@@ -11,14 +11,21 @@
   "prConcurrentLimit": 5,
   "packageRules": [
     {
-      "description": "Fork modules move ONLY via the fork-rebase flow (fork-maintenance.md / /dep-upgrade). A Renovate bump would break the local-path replace / submodule pin, so never auto-bump them. Listing a path a repo does not use is a harmless no-op.",
+      "description": "Fork-governed deps move ONLY via the fork-rebase flow (fork-maintenance.md / /dep-upgrade), never Renovate. Covers the OpenTofu forks (opentofu, provider-client, svchost, registry-address, and the opentofu/hcl/v2 fork that github.com/hashicorp/hcl/v2 is replaced with), the shared zclconf/go-cty type stack (MVS picks the max and the fork compiles from source against it, so a bump ahead of the fork can break its compile), the CLI's docker-agent/cagent fork, and tfcoremock. Listing a path a repo does not use is a harmless no-op.",
       "matchPackageNames": [
-        "github.com/opentofu/opentofu",
-        "github.com/opentofu/provider-client",
+        "github.com/opentofu/**",
+        "github.com/hashicorp/hcl/v2",
+        "github.com/zclconf/**",
         "github.com/hashicorp/terraform-provider-tfcoremock",
         "github.com/docker/docker-agent",
         "github.com/docker/cagent"
       ],
+      "enabled": false
+    },
+    {
+      "description": "Indirect Go deps are the fork's transitive closure (derived from ./opentofu via go mod tidy); they move with the fork, not Renovate. This is also Renovate's default — pinned explicitly so the policy is legible.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
       "enabled": false
     },
     {
@@ -33,8 +40,8 @@
       "groupName": "github actions"
     }
   ],
-  "gitSubmodules": {
-    "description": "Fork submodules are fork-flow-managed, not Renovate-bumped.",
+  "git-submodules": {
+    "description": "Fork submodules are fork-flow-managed, not Renovate-bumped. This manager is disabled by default (beta/opt-in); pinned off explicitly so the intent survives any default change.",
     "enabled": false
   },
   "cloneSubmodules": true,
