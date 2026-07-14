@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🌱 Turf
+<img src="https://raw.githubusercontent.com/turfbuild/.github/main/profile/turf-logo.png" alt="Turf" width="200" />
+
+# Turf
 
 **A drop-in replacement for Terraform with agentic superpowers.**
 
