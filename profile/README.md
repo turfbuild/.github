@@ -2,9 +2,9 @@
 
 <img src="https://raw.githubusercontent.com/turfbuild/.github/main/profile/turf-logo.png" alt="Turf" width="220" />
 
-**A drop-in replacement for Terraform with agentic superpowers.**
+**The infrastructure engine built for AI agents.**
 
-Full support for Terraform HCL and the module registry — exposed to AI agents as an
+Terraform-compatible — full HCL and module-registry support — exposed to AI agents as an
 infrastructure-management MCP server built on OpenTofu providers.
 
 [turf.build](https://turf.build) · [Install](#get-started) · [Examples](https://github.com/turfbuild/turf-examples)
