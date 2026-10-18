@@ -22,7 +22,7 @@ brew services start turf                                        # the engine, no
 npx add-mcp@2 "$(command -v turf-mcp-server)" --name turf -g    # connect your agent
 ```
 
-Then, in Claude Code: `/mcp__turf__guide`.
+Then, in Claude Code: `/turf:guide`.
 
 This installs four binaries on your `PATH`: **`turf-mcp-server`**, the MCP server your agent
 talks to; the engine behind it, `turf-engine` and `turf-builtin-provider`, which
@@ -86,7 +86,7 @@ claude mcp add --scope project --env AWS_PROFILE=turf-dev turf -- turf-mcp-serve
 ```
 
 Verify with `claude mcp get turf` / `claude mcp list`. Turf's prompts are slash commands:
-`/mcp__turf__guide`, `/mcp__turf__up path/to/config`, `/mcp__turf__destroy path/to/config`
+`/turf:guide`, `/turf:up path/to/config`, `/turf:destroy path/to/config`
 (arguments are one word each).
 
 #### Codex CLI — `codex mcp add`
