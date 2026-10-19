@@ -4,10 +4,11 @@
 
 **The infrastructure engine built for AI agents.**
 
+Turf™ is a self-hosted, autonomous infrastructure-as-code tool, built on OpenTofu™.
 Terraform-compatible — full HCL and module-registry support — exposed to AI agents as an
-infrastructure-management MCP server built on OpenTofu providers.
+infrastructure MCP server.
 
-[turf.build](https://turf.build) · [Install](#get-started) · [Examples](https://github.com/turfbuild/turf-examples)
+[turf.build](https://turf.build) · [Get started](#get-started) · [Examples](https://github.com/turfbuild/turf-examples)
 
 </div>
 
@@ -16,39 +17,46 @@ infrastructure-management MCP server built on OpenTofu providers.
 ## Get started
 
 ```bash
-brew install turfbuild/tap/turf
+brew install restatedev/tap/restate-server turfbuild/tap/turf
+brew services start turf                                        # the engine, now and at every login
+npx add-mcp@2 "$(command -v turf-mcp-server)" --name turf -g    # connect your agent
 ```
 
-This installs two binaries on your `PATH`: the **Turf CLI** (`turf`) and the engine,
-**`turf-mcp-server`** — an MCP server that exposes infrastructure tools (plan/apply, provider
-control, state) to any MCP client.
+Then, in Claude Code: `/turf:guide`.
 
-### Two ways to use Turf
-
-- **The Turf CLI** — a batteries-included agent. `turf up`, `turf chat`, and friends drive the
-  engine for you. It brings its own model and needs a model API key
-  (`ANTHROPIC_API_KEY` / `GOOGLE_API_KEY`).
-- **As an MCP server** — point an MCP client you already use at `turf-mcp-server` and drive
-  infrastructure from there. No CLI required; the engine is fully usable on its own.
-
-### Use it as an MCP server
-
-`turf-mcp-server` speaks standard MCP over stdio, so any client with an `mcp add` command
-registers it in one line:
-
-```bash
-claude mcp add turf -- turf-mcp-server      # Claude Code
-codex  mcp add turf -- turf-mcp-server      # Codex CLI
-gemini mcp add turf turf-mcp-server         # Gemini CLI
-```
+This installs four binaries on your `PATH`: **`turf-mcp-server`**, the MCP server your agent
+talks to; the engine behind it, `turf-engine` and `turf-builtin-provider`, which
+`brew services start turf` runs as a service (`turf-mcp-server engine status` says where); and
+the **Turf CLI**, `turf`. Without Homebrew, `curl -fsSL https://get.turf.build/install.sh | bash`
+installs the same into `~/.turf/bin`.
 
 > In **Claude Code** and **Claude Desktop**, Turf runs on your Claude subscription — no separate
-> model API key. (The Turf CLI, by contrast, brings its own model and needs an API key.)
+> model API key.
 
-For a client without an installer, add the standard block to its MCP config:
+<a id="use-it-as-an-mcp-server"></a>
+## Connect your agent
+
+The `npx add-mcp@2 … --name turf -g` line registers the server with every agent on this machine.
+It detects the ones you have installed — Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI,
+VS Code, Windsurf, Zed and more — lets you pick from the list, and writes each config with the
+server's absolute path, so an app launched from the Dock finds it too. It needs Node 18+ and uses
+[add-mcp](https://github.com/neon-solutions/add-mcp), Neon's open-source installer; running it
+again replaces the entry. Restart Claude Desktop or Cursor after the config changes.
+
+Without Node, any client with an `mcp add` command registers the server in one line:
+
+```bash
+claude mcp add turf --scope user -- turf-mcp-server             # Claude Code
+codex  mcp add turf -- turf-mcp-server                          # Codex CLI
+gemini mcp add -s user turf turf-mcp-server                     # Gemini CLI
+code --add-mcp '{"name":"turf","command":"turf-mcp-server"}'    # VS Code
+```
+
+For a client without one, add the standard block to its MCP config, with the path
+`command -v turf-mcp-server` prints:
 
 ```json
-{ "mcpServers": { "turf": { "command": "turf-mcp-server" } } }
+{ "mcpServers": { "turf": { "command": "/path/to/turf-mcp-server" } } }
 ```
 
 <details>
@@ -56,28 +64,30 @@ For a client without an installer, add the standard block to its MCP config:
 
 <br />
 
-Replace `turf-mcp-server` with a full path if it isn't on your `PATH`, or run the container
-instead: `docker run --rm -i ghcr.io/turfbuild/turf-mcp-server:latest`.
+Use the absolute path (`command -v turf-mcp-server`) whenever the client is a GUI app or
+`turf-mcp-server` isn't on its `PATH`.
 
 #### Claude Code — `claude mcp add`
 
 Three scopes: `local` (this project, private — the default), `project` (shared via a committed
-`.mcp.json`), and `user` (every project). The `--` separates Claude Code's flags from the command
-it runs.
+`.mcp.json`; Claude Code asks you to approve it the first time), and `user` (every project). The
+`--` separates Claude Code's flags from the command it runs.
 
 ```bash
 claude mcp add --scope user turf -- turf-mcp-server        # every project (~/.claude.json)
-claude mcp add --scope project turf -- turf-mcp-server      # this repo, committed to .mcp.json
+claude mcp add --scope project turf -- turf-mcp-server     # this repo, committed to .mcp.json
 ```
 
 Pass environment variables (e.g. cloud credentials) with `--env KEY=value`, repeatable, before
 the `--`:
 
 ```bash
-claude mcp add --scope project --env AWS_PROFILE=turf-dev -- turf-mcp-server
+claude mcp add --scope project --env AWS_PROFILE=turf-dev turf -- turf-mcp-server
 ```
 
-Verify with `claude mcp get turf` / `claude mcp list`.
+Verify with `claude mcp get turf` / `claude mcp list`. Turf's prompts are slash commands:
+`/turf:guide`, `/turf:up path/to/config`, `/turf:destroy path/to/config`
+(arguments are one word each).
 
 #### Codex CLI — `codex mcp add`
 
@@ -122,7 +132,7 @@ Verify with `gemini mcp list` or `/mcp` inside a session.
 #### Clients without an `mcp add` command
 
 Claude Desktop, Cursor, and Windsurf read the same `mcpServers` block shown above — paste it into
-their config file. Two clients need small tweaks:
+their config file, or let `npx add-mcp@2 … -g` write it. Two clients need small tweaks:
 
 ```json
 // VS Code — root key is "servers", each entry needs a "type"
@@ -160,11 +170,22 @@ use a `url` (and `headers` if it requires auth):
 
 </details>
 
+## The standalone agent: the Turf CLI
+
+```bash
+turf chat                          # interactive, in a terminal
+cd path/to/config && turf up       # deploy or reconcile a configuration
+```
+
+The CLI drives the same server and engine with its own agent, so it brings its own model: set
+`ANTHROPIC_API_KEY` (or `GOOGLE_API_KEY`, `OPENAI_API_KEY`), run a local model, or point it at a
+private endpoint. Its README: [turfbuild/turf](https://github.com/turfbuild/turf).
+
 ## Featured
 
 | Repo | Description |
 | --- | --- |
-| [**turf**](https://github.com/turfbuild/turf) | The Turf CLI and `turf-mcp-server` — alpha binary releases. |
+| [**turf**](https://github.com/turfbuild/turf) | The Turf CLI and `turf-mcp-server` — 1.0 releases. |
 | [**turf-examples**](https://github.com/turfbuild/turf-examples) | Reference integrations, agent definitions, and Terraform/HCL examples. |
 
 ## Open source
@@ -176,10 +197,22 @@ Turf is built on OpenTofu and a small set of MPL-2.0 forks we maintain in the op
 - [terraform-provider-tfcoremock](https://github.com/turfbuild/terraform-provider-tfcoremock) — mock provider used in tests
 - [docker-agent](https://github.com/turfbuild/docker-agent) — downstream cagent fork powering the CLI
 
+## License and telemetry
+
+Turf is free for noncommercial use under the PolyForm Noncommercial License 1.0.0. Commercial
+use, including a company's internal use, needs a license: https://turf.build/licensing. The
+`turf` CLI is open source (MPL-2.0).
+
+Turf sends anonymous usage telemetry to Turf LLC by default: the version, the platform, counts
+of resources, changes and runs, and an anonymous installation id. It never sends resource
+contents, credentials, state, variable values or names. Turn it off with `turf telemetry off`,
+or with `TURF_TELEMETRY=off` or `DO_NOT_TRACK=1` in the engine's environment; the full field
+list and the endpoint are at https://turf.build/telemetry.
+
 ## Security
 
-Turf is alpha software with a transparent supply-chain posture: every push runs continuous
-scanning (govulncheck, osv-scanner, gosec, trivy), and releases ship SBOMs (SPDX + CycloneDX),
-OpenVEX disposition documents, and scan reports with GitHub-native build & SBOM attestations.
-See our [security policy](https://github.com/turfbuild/.github/blob/main/SECURITY.md) — report
-issues privately to `security@turf.build`.
+Turf has a transparent supply-chain posture: every push runs continuous scanning (govulncheck,
+osv-scanner, gosec, trivy), and releases ship SBOMs (SPDX + CycloneDX), OpenVEX disposition
+documents, and scan reports with GitHub-native build &amp; SBOM attestations. See our
+[security policy](https://github.com/turfbuild/.github/blob/main/SECURITY.md) — report issues
+privately to `security@turf.build`.
