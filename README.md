@@ -8,6 +8,9 @@ repositories:
 | [`.github/workflows/security-scan.yml`](.github/workflows/security-scan.yml) | **Reusable** (`workflow_call`) security-scan workflow |
 | [`actions/scan/`](actions/scan) | **Composite** action running the pinned scanners → per-tool SARIF |
 | [`SECURITY.md`](SECURITY.md) | Org-default vulnerability-disclosure policy |
+| [`SUPPORT.md`](SUPPORT.md) | Org-default support guide: where questions, bugs and everything else go |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Org-default code of conduct (Contributor Covenant 2.1) |
+| [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml) | Org-default issue chooser: contact links for questions and security reports |
 | [`renovate-config.json`](renovate-config.json) | Shared Renovate preset (fork paths + submodules disabled) |
 
 The scanners mirror the Turf server's `make scan` (govulncheck, osv-scanner,

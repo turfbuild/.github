@@ -1,0 +1,9 @@
+# Org default for turfbuild repositories without their own .github/ISSUE_TEMPLATE.
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and ideas
+    url: https://turf.build/discord/
+    about: Ask, share what you built, or float an idea on the Turf Discord.
+  - name: Security vulnerability
+    url: https://github.com/turfbuild/.github/blob/main/SECURITY.md
+    about: Report privately per the security policy. Never open a public issue for a security problem.

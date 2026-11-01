@@ -8,7 +8,7 @@ Turf™ is a self-hosted, autonomous infrastructure-as-code tool, built on OpenT
 Terraform-compatible — full HCL and module-registry support — exposed to AI agents as an
 infrastructure MCP server.
 
-[turf.build](https://turf.build) · [Get started](#get-started) · [Examples](https://github.com/turfbuild/turf-examples)
+[turf.build](https://turf.build) · [Get started](#get-started) · [Examples](https://github.com/turfbuild/turf-examples) · [Community](https://turf.build/community/)
 
 </div>
 
@@ -208,6 +208,15 @@ of resources, changes and runs, and an anonymous installation id. It never sends
 contents, credentials, state, variable values or names. Turn it off with `turf telemetry off`,
 or with `TURF_TELEMETRY=off` or `DO_NOT_TRACK=1` in the engine's environment; the full field
 list and the endpoint are at https://turf.build/telemetry.
+
+## Community
+
+- Questions, ideas, show and tell: [Discord](https://turf.build/discord/).
+- Bugs and feature requests: [turfbuild/turf issues](https://github.com/turfbuild/turf/issues).
+- Release notes by email: [the newsletter](https://turf.build/newsletter/). Follow Turf on
+  [LinkedIn](https://www.linkedin.com/company/turfbuild/) and [X](https://x.com/turfbuild).
+- Evaluating Turf at a company? [The pilot program](https://turf.build/licensing/#pilot).
+- Anything else: contact@turf.build. All of it at https://turf.build/community/.
 
 ## Security
 
