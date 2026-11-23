@@ -18,19 +18,20 @@ with you before any public advisory.
 
 ## Supported versions
 
-Turf is in active alpha development; security fixes land on the latest release
-line. Pin to the latest tag and prefer the signed release artifacts.
+Security fixes land on the latest release line. Pin to the latest tag and prefer
+the signed release artifacts.
 
 ## How we scan
 
-Every push and pull request across the org runs continuous scanning through the
-shared reusable workflow
-([`turfbuild/.github`](https://github.com/turfbuild/.github)):
+Public repositories scan every push and pull request through the shared reusable
+workflow ([`turfbuild/.github`](https://github.com/turfbuild/.github)). The
+private server is scanned before each release is tagged, and weekly:
 
 - **govulncheck** — reachable Go CVEs (call-graph filtered)
 - **osv-scanner** — dependency / lockfile CVEs
 - **trivy** — filesystem, container image, misconfig, secrets
 - **gosec** — first-party SAST (newly-introduced findings gate PRs)
+- **grype** — the release SBOM, before it is attested
 
 Public repositories surface results in the GitHub **code-scanning** tab; the
 private server surfaces them as workflow artifacts and dedup'd tracking issues.
@@ -49,10 +50,33 @@ finding is carried in the consumer's OpenVEX disposition as `affected` /
 The Turf server binary is proprietary and obfuscated, but its supply-chain
 posture is public and verifiable. Every release on
 [`turfbuild/turf`](https://github.com/turfbuild/turf/releases) ships, alongside
-`checksums.txt`, an SBOM (SPDX + CycloneDX, generated from the module graph), an
-**OpenVEX** per-CVE disposition document, and a scan report — all covered by
-GitHub-native build & SBOM attestations:
+`checksums.txt`:
+
+- an SBOM for each component (SPDX + CycloneDX; the server's is generated from
+  the module graph, so obfuscation hides no dependency) and an assembly SBOM
+  tying them together;
+- an **OpenVEX** per-CVE disposition document;
+- **Sigstore attestations** of build provenance, SBOM and VEX, recorded in the
+  public Rekor transparency log.
+
+The open `turf` CLI and the release archives are attested with GitHub
+attestations. The server binaries and the container image are built in a private
+repository, so they are attested with cosign keyless signing instead, which
+anyone can verify:
 
 ```bash
-gh attestation verify turf-mcp-server --repo turfbuild/turf
+# CLI and archives
+gh attestation verify turf --repo turfbuild/turf
+
+# server binaries: the .provenance.sigstore.json bundle ships beside each one
+ID='^https://github.com/turfbuild/turf-mcp-server/'
+ISS=https://token.actions.githubusercontent.com
+cosign verify-blob-attestation --type slsaprovenance1 \
+  --bundle turf-mcp-server-linux_amd64.provenance.sigstore.json \
+  --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISS" \
+  turf-mcp-server-linux_amd64
+
+# container image
+cosign verify ghcr.io/turfbuild/turf-mcp-server:<tag> \
+  --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISS"
 ```
