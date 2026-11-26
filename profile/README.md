@@ -241,8 +241,10 @@ Turf is built on OpenTofu and a small set of MPL-2.0 forks we maintain in the op
 
 ## License and telemetry
 
-Turf is free for noncommercial use under the PolyForm Noncommercial License 1.0.0. Commercial
-use, including a company's internal use, needs a license: https://turf.build/licensing. The
+Turf is proprietary software under the Turf Community Edition License 1.0
+(https://turf.build/license/v1/). It is free for individuals, education and small businesses
+within the Community limits. Government and larger organizations need a commercial license, and
+anyone may evaluate Turf, not in production, for 30 days: https://turf.build/licensing/. The
 `turf` CLI is open source (MPL-2.0).
 
 Turf sends anonymous usage telemetry to Turf LLC by default: the version, the platform, counts
