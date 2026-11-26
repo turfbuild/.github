@@ -107,8 +107,23 @@ claude mcp add --scope project --env AWS_PROFILE=turf-dev turf -- npx -y @turfbu
 ```
 
 A variable set this way reaches the server and the state backend (an S3 backend reads that
-`AWS_PROFILE`), not providers, which run in the engine. Provider variables go in the
-configuration's `mise.local.toml`.
+`AWS_PROFILE`). Providers run in the engine, and get a variable when `TURF_PROVIDER_ENV` names it:
+
+```bash
+claude mcp add --scope project --env AWS_PROFILE=turf-dev --env TURF_PROVIDER_ENV=AWS_PROFILE turf -- npx -y @turfbuild/turf-mcp-server
+```
+
+The entry's `env` then holds both lines, as it does in any client's config:
+
+```json
+"env": { "AWS_PROFILE": "turf-dev", "TURF_PROVIDER_ENV": "AWS_PROFILE" }
+```
+
+The server sends the variables you name, with their values, when a run starts; `PATH` and the
+engine's own variables are never sent. Restart the agent after a change. Credentials in their
+usual files (the default AWS profile, `~/.kube/config`, gcloud's application-default credentials,
+the `az` login) need nothing set, and a configuration's own settings go in its `mise.toml` or
+`mise.local.toml`.
 
 Verify with `claude mcp get turf` / `claude mcp list`. Turf's prompts are slash commands:
 `/turf:guide`, `/turf:up path/to/config`, `/turf:destroy path/to/config`
