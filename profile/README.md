@@ -26,7 +26,9 @@ Then, in Claude Code: `/turf:guide`.
 
 The first line registers **`turf-mcp-server`**, the MCP server your agent talks to, with the
 agents on this machine. It needs Node 18 or later, on macOS or Linux, arm64 or x64. The second
-accepts the [Turf license terms](https://turf.build/license/v1/), once. The server starts the
+accepts the [Turf license terms](https://turf.build/license/v1/), once. Whichever npx command
+runs Turf first downloads it: run the accept line before your agent has started Turf and the
+minute passes there, in the terminal, and the agent's first start is quick. The server starts the
 engine behind it when a tool first needs it, and the engine keeps running when your agent quits.
 
 > In **Claude Code** and **Claude Desktop**, Turf runs on your Claude subscription — no separate
@@ -189,8 +191,10 @@ npx -y @turfbuild/turf-mcp-server engine stop
 ```
 
 An unpinned entry asks npm at every start, so a new release is installed the next time the client
-starts the server. The running engine is still the old one: the server says so, `engine stop`
-ends it, and the next call starts the new one. To hold a version, pin it in the entry:
+starts the server. The engine that is running stays the old one until it is stopped: `engine stop`
+ends it, and the next call starts the new one. Across a minor release (1.5 to 1.6) the server
+refuses the older engine and names that remedy; after a patch release it keeps using the running
+engine and says nothing. To hold a version, pin it in the entry:
 `@turfbuild/turf-mcp-server@1.5.0`.
 
 #### Remote / HTTP
@@ -218,7 +222,7 @@ turf chat                          # interactive, in a terminal
 cd path/to/config && turf up       # deploy or reconcile a configuration
 ```
 
-The CLI comes with the Homebrew install. It drives the same server and engine with its own agent,
+The CLI comes with the Homebrew or the script install. It drives the same server and engine with its own agent,
 so it brings its own model: set `ANTHROPIC_API_KEY` (or `GOOGLE_API_KEY`, `OPENAI_API_KEY`), run a
 local model, or point it at a private endpoint. Its README:
 [turfbuild/turf](https://github.com/turfbuild/turf).
@@ -249,9 +253,14 @@ anyone may evaluate Turf, not in production, for 30 days: https://turf.build/lic
 
 Turf sends anonymous usage telemetry to Turf LLC by default: the version, the platform, counts
 of resources, changes and runs, and an anonymous installation id. It never sends resource
-contents, credentials, state, variable values or names. Turn it off with `DO_NOT_TRACK=1` or
-`TURF_TELEMETRY=off` in the server entry's `env`, or, with the CLI, `turf telemetry off`; the full
-field list and the endpoint are at https://turf.build/telemetry.
+contents, credentials, state, variable values or names. To turn it off, put `DO_NOT_TRACK=1` in
+the `env` of the server's entry in each agent that has one, reconnect the agent so its server
+restarts with it, then stop the engine:
+`npx -y @turfbuild/turf-mcp-server engine stop`.
+The next call starts the engine with telemetry off. With the CLI, `turf telemetry off` and the same
+stop do it. The Homebrew service reads neither an entry nor your shell: its environment is
+`~/.homebrew/services/turf.env`. The full field list and the endpoint are at
+https://turf.build/telemetry.
 
 ## Community
 
