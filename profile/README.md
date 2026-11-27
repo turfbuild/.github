@@ -16,20 +16,20 @@ infrastructure MCP server.
 
 ## Get started
 
+Read the [Turf license terms](https://turf.build/license/v1/) first, then:
+
 ```bash
+npx -y @turfbuild/turf-mcp-server license accept   # downloads Turf, about a minute, and accepts the terms
 npx add-mcp@2 @turfbuild/turf-mcp-server --name turf -g
-# the first start downloads Turf: about a minute
-npx -y @turfbuild/turf-mcp-server license accept
 ```
 
 Then, in Claude Code: `/turf:guide`.
 
-The first line registers **`turf-mcp-server`**, the MCP server your agent talks to, with the
-agents on this machine. It needs Node 18 or later, on macOS or Linux, arm64 or x64. The second
-accepts the [Turf license terms](https://turf.build/license/v1/), once. Whichever npx command
-runs Turf first downloads it: run the accept line before your agent has started Turf and the
-minute passes there, in the terminal, and the agent's first start is quick. The server starts the
-engine behind it when a tool first needs it, and the engine keeps running when your agent quits.
+The first line downloads Turf in the terminal, which takes about a minute, and records your
+acceptance once, in `~/.turf/license.json`. The second registers **`turf-mcp-server`**, the MCP
+server your agent talks to, with the agents on this machine. It needs Node 18 or later, on macOS or
+Linux, arm64 or x64. The agent's first start is then quick. The server starts the engine behind it
+when a tool first needs it, and the engine keeps running when your agent quits.
 
 > In **Claude Code** and **Claude Desktop**, Turf runs on your Claude subscription — no separate
 > model API key.
@@ -55,11 +55,13 @@ The `npx add-mcp@2 … --name turf -g` line registers the server with every agen
 It detects the ones you have installed (Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI,
 VS Code, Windsurf, Zed and more), lets you pick from the list, and writes each config. It uses
 [add-mcp](https://github.com/neon-solutions/add-mcp), Neon's open-source installer; running it
-again replaces the entry. Restart Claude Desktop or Cursor after the config changes. The first
-start downloads Turf, which takes about a minute: a client that gives up on it connects when you
-reconnect once.
+again replaces the entry. Restart Claude Desktop or Cursor after the config changes. If the
+agent's first start fails, turn Turf off in the agent, run the `license accept` line in a terminal
+and let it finish, then reconnect. If the server says a package "is installed without its binary",
+an earlier install was interrupted: the message names the npx folder to remove and the steps.
 
-Any client with an `mcp add` command registers the server in one line:
+Any client with an `mcp add` command registers the server in one line, in place of the `add-mcp`
+line (run the `license accept` line first, so the download happens in the terminal):
 
 ```bash
 # Claude Code
